@@ -16,4 +16,4 @@ repos:
         name: 不可 commit 單據、圖片或輸出檔
         language: fail
         entry: 不可 commit 單據、圖片、PDF 或 result*.json(含個資),請放 repo 外
-        files: '(?i)(^samples/(?!README\.md$)|\.(jpe?g|png|heic|pdf)$|(^|/)result[^/]*\.json$)'
+        files: '(?i)(^samples/(?!README\.md$)|\.(jpe?g|png|heic|heif|webp|tiff?|bmp|gif|pdf)$|(^|/)result[^/]*\.json$)'
