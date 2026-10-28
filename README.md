@@ -8,8 +8,9 @@
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt
+pip install --require-hashes -r requirements-dev.txt
 python -m pytest -q
+pip install pre-commit && pre-commit install   # 只防誤 commit,不防 --no-verify
 
 # 只用 QR(不花錢,不需要 key)
 python -m receipt extract path/to/receipt.jpg
@@ -35,19 +36,22 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 ## 預算(上限 US$5)
 
 - 預設不呼叫 LLM。QR 能解的欄位不送 LLM,只在 `--use-llm` 時補其他欄位。
-- 單次執行最多 `RECEIPT_MAX_LLM_CALLS` 次呼叫(含重試,預設 5)。這只是防呆;**真正的上限要在 OpenAI 後台為專用 key 設定**。
+- 單次執行最多 `RECEIPT_MAX_LLM_CALLS` 次呼叫(含重試,預設 5,上限 10)。這只是防呆;**真正的上限要在 OpenAI 後台為專用 key 設定**。
 - 先用小模型,模型名稱由 `RECEIPT_MODEL` 指定,沒有預設值,避免默默用到貴的模型。
 - 送出前圖片會縮到長邊 1600px 並重新編碼(同時去掉 EXIF)。
 
 ## 資安規則
 
 - API key 只放本機 `.env`(已 ignore),不進 git、Issue、聊天。`.env.example` 只有空值。
-- 啟用 pre-commit:`pip install pre-commit && pre-commit install`,commit 時會跑 gitleaks。
+- pre-commit(`pre-commit install`)跑 gitleaks,並擋下單據圖片、PDF、`result*.json`(連 `git add -f` 也擋)。`--no-verify` 能繞過,所以 CI 也要掃 secret(CI 檔見 PR 留言)。
+- `.gitignore` 全 repo 擋 jpg/png/heic/pdf 與 `result*.json`。測試用的 QR 圖用 `qrcode` 即時產生,不放圖檔進 repo。
+- 圖片上限:檔案 15MB、5000 萬像素。
 - 樣本圖片與正確答案檔放 `samples/`(已 ignore),不 commit;說明見 `samples/README.md`。
 - 輸出只寫 stdout,不自動寫檔;若要存檔,存到 repo 外或 `out/`(已 ignore)。
 - log 只記次數與錯誤類型,不記 header、圖片、LLM 原始回應。
 - QR 的 24 碼加密驗證資訊需賣方 AES 金鑰,**不驗證**,輸出也不宣稱「已驗證真偽」。
-- 送第三方 LLM 前,供應商的資料保留與訓練政策要先查證並記在 Issue #10。
+- 送第三方 LLM 前,供應商的資料保留與訓練政策要先查證並記在 Issue #10。程式用 `store=False`,但這**不等於 zero data retention**,供應商仍可能為 abuse monitoring 保留資料一段時間。
+- 呼叫上限 `RECEIPT_MAX_LLM_CALLS` 限制在 1 到 10,且只算單次執行;**真正的上限是在 OpenAI 後台為專用 project 設定 budget limit**。
 
 ## TODO(之後的切片)
 

@@ -41,7 +41,9 @@ class Extractor(Protocol):
 class OpenAIExtractor:
     def __init__(self, settings: Settings, budget: CallBudget, retries: int = 1):
         # max_retries=0:SDK 內建重試會偷偷多花錢,重試統一由這裡控制並計入 budget
-        self._client = OpenAI(api_key=settings.openai_api_key, timeout=settings.timeout_s, max_retries=0)
+        self._client = OpenAI(
+            api_key=settings.openai_api_key.get_secret_value(), timeout=settings.timeout_s, max_retries=0
+        )
         self._model = settings.model
         self._budget = budget
         self._retries = retries
@@ -59,7 +61,7 @@ class OpenAIExtractor:
                         {"role": "user", "content": [{"type": "input_image", "image_url": image_data_url}]}
                     ],
                     text_format=LLMReceipt,
-                    store=False,  # 不讓供應商保存這次的 response(仍需確認供應商的資料保留政策)
+                    store=False,  # 不等於 zero retention:供應商仍可能為 abuse monitoring 保留,需另查政策
                     max_output_tokens=1000,
                 )
                 if resp.output_parsed is None:

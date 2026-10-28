@@ -57,3 +57,41 @@ def test_cli_llm_requires_key(fake_invoice_image, tmp_path, monkeypatch, capsys)
     monkeypatch.chdir(tmp_path)  # 避免讀到本機真實 .env
     assert main(["extract", str(p), "--use-llm"]) == 2
     assert "OPENAI_API_KEY" in capsys.readouterr().err
+
+
+def test_settings_secret_not_leaked(monkeypatch, tmp_path):
+    import dataclasses
+
+    from receipt.config import Settings
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-FAKEKEY")
+    monkeypatch.setenv("RECEIPT_MODEL", "m")
+    monkeypatch.setenv("RECEIPT_MAX_LLM_CALLS", "100000")
+    s = Settings.from_env()
+    for text in (repr(s), str(s), str(dataclasses.asdict(s)), str(vars(s))):
+        assert "FAKEKEY" not in text
+    assert s.max_llm_calls == 10  # clamp
+
+
+def test_bad_numeric_env_is_config_error(fake_invoice_image, tmp_path, monkeypatch, capsys):
+    p = tmp_path / "x.png"
+    fake_invoice_image.save(p)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-FAKEKEY")
+    monkeypatch.setenv("RECEIPT_MODEL", "m")
+    monkeypatch.setenv("RECEIPT_TIMEOUT_S", "abc")
+    assert main(["extract", str(p), "--use-llm"]) == 2
+    assert "FAKEKEY" not in capsys.readouterr().err
+
+
+def test_oversized_pixels_rejected(tmp_path, monkeypatch):
+    from PIL import Image
+
+    from receipt import imageio
+
+    p = tmp_path / "big.png"
+    Image.new("L", (300, 300)).save(p)
+    monkeypatch.setattr(imageio, "MAX_PIXELS", 1000)
+    with pytest.raises(imageio.ImageError, match="像素"):
+        imageio.load_image(p)

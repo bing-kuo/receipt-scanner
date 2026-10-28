@@ -1,7 +1,10 @@
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
+
+from openai import APIError
 
 from receipt.config import ConfigError, Settings
 from receipt.imageio import ImageError, load_image
@@ -20,6 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    os.umask(0o077)  # 之後若寫檔,預設只有自己可讀
     args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING, stream=sys.stderr)
     try:
@@ -31,6 +35,11 @@ def main(argv: list[str] | None = None) -> int:
         receipt = extract_receipt(image, extractor)
     except (ImageError, ConfigError, NoQRFound, BudgetExceeded, NotImplementedError, RuntimeError) as e:
         print(f"錯誤:{e}", file=sys.stderr)
+        return 2
+    except (APIError, ValueError) as e:
+        # 只印例外類型與 HTTP status,不印訊息:之後訊息可能夾帶 request/response 內容
+        status = getattr(e, "status_code", None)
+        print(f"錯誤:{type(e).__name__}" + (f"(HTTP {status})" if status else ""), file=sys.stderr)
         return 2
     print(receipt.model_dump_json(indent=2))
     return 0

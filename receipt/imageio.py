@@ -7,6 +7,7 @@ from pathlib import Path
 from PIL import Image, ImageOps
 
 MAX_FILE_BYTES = 15 * 1024 * 1024
+MAX_PIXELS = 50_000_000  # 15MB 的 PNG 可能解壓成上億像素,先看 header 的尺寸
 LLM_MAX_SIDE = 1600  # 送 LLM 前縮圖,降低 token 成本;Bing 可依 benchmark 調整
 
 
@@ -23,8 +24,12 @@ def load_image(path: Path) -> Image.Image:
         raise ImageError(f"檔案超過 {MAX_FILE_BYTES // (1024 * 1024)}MB 上限")
     try:
         with Image.open(path) as im:
+            if im.width * im.height > MAX_PIXELS:
+                raise ImageError("圖片像素過大")
             im = ImageOps.exif_transpose(im)
             return im.convert("RGB")
+    except ImageError:
+        raise
     except Exception as e:  # Pillow 對壞檔的例外種類很多
         raise ImageError("無法讀取圖片") from e
 

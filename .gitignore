@@ -220,10 +220,16 @@ __marimo__/
 .streamlit/secrets.toml
 
 # --- acornsight-poc-receipt ---
-# 樣本圖片與正確答案檔放 repo 外或 samples/ 內,一律不 commit(含個資)
+# 樣本圖片與正確答案檔一律不 commit(含個資);圖檔、PDF、輸出檔全 repo 都擋,不只 samples/
 samples/*
 !samples/README.md
 out/
 *.out.json
 .env.*
 !.env.example
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.pdf
+result*.json
