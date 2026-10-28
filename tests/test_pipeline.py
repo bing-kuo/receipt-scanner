@@ -1,0 +1,59 @@
+import pytest
+
+from receipt.cli import main
+from receipt.llm import BudgetExceeded, CallBudget
+from receipt.models import LLMReceipt
+from receipt.pipeline import NoQRFound, extract_receipt
+
+
+class FakeExtractor:
+    def __init__(self):
+        self.calls = 0
+
+    def extract(self, image_data_url: str) -> LLMReceipt:
+        self.calls += 1
+        assert image_data_url.startswith("data:image/jpeg;base64,")
+        return LLMReceipt(seller_name="測試商店")
+
+
+def test_qr_only_makes_no_llm_call(fake_invoice_image):
+    r = extract_receipt(fake_invoice_image)
+    assert r.total_amount == 80
+    assert set(r.sources.values()) == {"qr"}
+
+
+def test_no_qr_without_llm_fails_clearly(blank_image):
+    with pytest.raises(NoQRFound):
+        extract_receipt(blank_image)
+
+
+def test_llm_path_goes_through_reconcile_stub(fake_invoice_image):
+    # reconcile 是 Bing 的部分;實作前應明確失敗,而不是悄悄給預設答案
+    ex = FakeExtractor()
+    with pytest.raises(NotImplementedError):
+        extract_receipt(fake_invoice_image, ex)
+    assert ex.calls == 1
+
+
+def test_budget_blocks_extra_calls():
+    b = CallBudget(2)
+    b.consume()
+    b.consume()
+    with pytest.raises(BudgetExceeded):
+        b.consume()
+
+
+def test_cli_qr_only(fake_invoice_image, tmp_path, capsys):
+    p = tmp_path / "x.png"
+    fake_invoice_image.save(p)
+    assert main(["extract", str(p)]) == 0
+    assert '"AB12345678"' in capsys.readouterr().out
+
+
+def test_cli_llm_requires_key(fake_invoice_image, tmp_path, monkeypatch, capsys):
+    p = tmp_path / "x.png"
+    fake_invoice_image.save(p)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.chdir(tmp_path)  # 避免讀到本機真實 .env
+    assert main(["extract", str(p), "--use-llm"]) == 2
+    assert "OPENAI_API_KEY" in capsys.readouterr().err
