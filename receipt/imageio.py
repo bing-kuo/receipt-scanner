@@ -1,4 +1,4 @@
-"""圖片載入與縮圖。圖片是不可信輸入:限制檔案大小,並在送出前重新編碼(順便去掉 EXIF,例如 GPS)。"""
+"""Image loading and resizing. Images are untrusted input: cap the file size and re-encode before sending (which also strips EXIF, e.g. GPS)."""
 
 import base64
 import io
@@ -7,8 +7,8 @@ from pathlib import Path
 from PIL import Image, ImageOps
 
 MAX_FILE_BYTES = 15 * 1024 * 1024
-MAX_PIXELS = 50_000_000  # 15MB 的 PNG 可能解壓成上億像素,先看 header 的尺寸
-LLM_MAX_SIDE = 1600  # 送 LLM 前縮圖,降低 token 成本;可依 benchmark 調整
+MAX_PIXELS = 50_000_000  # A 15MB PNG can decompress to hundreds of millions of pixels, so check the header dimensions first
+LLM_MAX_SIDE = 1600  # Downscale before sending to the LLM to reduce token cost; tune based on benchmarks
 
 
 class ImageError(ValueError):
@@ -30,7 +30,7 @@ def load_image(path: Path) -> Image.Image:
             return im.convert("RGB")
     except ImageError:
         raise
-    except Exception as e:  # Pillow 對壞檔的例外種類很多
+    except Exception as e:  # Pillow raises many different exception types for corrupt files
         raise ImageError("無法讀取圖片") from e
 
 
@@ -38,5 +38,5 @@ def to_data_url(image: Image.Image, max_side: int = LLM_MAX_SIDE) -> str:
     im = image.copy()
     im.thumbnail((max_side, max_side))
     buf = io.BytesIO()
-    im.save(buf, format="JPEG", quality=85)  # 重新編碼,不帶 EXIF
+    im.save(buf, format="JPEG", quality=85)  # Re-encode without EXIF
     return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()

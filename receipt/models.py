@@ -1,4 +1,4 @@
-"""資料結構。欄位為起手版本,可依需求增減。"""
+"""Data models. The fields are a starting point and can be added or removed as needed."""
 
 from typing import Literal
 
@@ -8,14 +8,14 @@ Source = Literal["qr", "llm"]
 
 
 class QRFields(BaseModel):
-    """電子發票左側 QR 前 77 碼的固定欄位(見 qr.py 的對照表)。"""
+    """Fixed fields from the first 77 characters of the e-invoice left QR (see the table in qr.py)."""
 
     invoice_number: str
-    date: str  # ISO 8601,已由民國年轉西元
+    date: str  # ISO 8601, converted from the ROC (Minguo) calendar year
     random_code: str
-    sales_amount: int  # 未稅銷售額
-    total_amount: int  # 含稅總額
-    buyer_tax_id: str | None  # 一般消費者(00000000)為 None
+    sales_amount: int  # Sales amount before tax
+    total_amount: int  # Total amount including tax
+    buyer_tax_id: str | None  # None for a consumer (00000000)
     seller_tax_id: str
 
 
@@ -27,7 +27,7 @@ class Item(BaseModel):
 
 
 class LLMReceipt(BaseModel):
-    """LLM 結構化輸出的 schema。所有欄位都可為 None:看不清楚就回 None,不要猜。"""
+    """Schema for structured LLM output. Every field may be None: return None when unreadable, never guess."""
 
     invoice_number: str | None = None
     date: str | None = None  # ISO 8601
@@ -44,7 +44,7 @@ class Issue(BaseModel):
 
 
 class Receipt(BaseModel):
-    """最終輸出。sources 記錄每個欄位是從 QR 還是 LLM 來的。"""
+    """Final output. `sources` records whether each field came from the QR code or the LLM."""
 
     invoice_number: str | None = None
     date: str | None = None
@@ -59,5 +59,5 @@ class Receipt(BaseModel):
 
     @property
     def needs_review(self) -> bool:
-        # NOTE: 最保守的預設(有任何 issue 即需人工),退回人工的條件待定義,見 validate.py。
+        # NOTE: Most conservative default (any issue requires manual review). The criteria for manual review are TBD, see validate.py.
         return bool(self.issues)

@@ -1,4 +1,4 @@
-"""主流程:QR 優先,LLM 只在明確要求時補欄位,最後執行 validate。"""
+"""Main flow: QR first, the LLM fills in fields only when explicitly requested, then validate."""
 
 import logging
 
@@ -24,7 +24,7 @@ def _from_qr(qr: QRFields) -> Receipt:
 
 
 def extract_receipt(image: Image.Image, extractor: Extractor | None = None) -> Receipt:
-    """extractor 為 None 時只用 QR(零成本)。給了 extractor 才會呼叫 LLM。"""
+    """With extractor=None only the QR code is used (zero cost). The LLM is called only when an extractor is given."""
     qr = find_einvoice_fields(image)
     log.info("qr_found=%s use_llm=%s", qr is not None, extractor is not None)
 
@@ -34,7 +34,7 @@ def extract_receipt(image: Image.Image, extractor: Extractor | None = None) -> R
         receipt = _from_qr(qr)
     else:
         llm = extractor.extract(to_data_url(image))
-        receipt = reconcile(qr, llm)  # 尚未實作,見 reconcile.py
+        receipt = reconcile(qr, llm)  # Not implemented yet, see reconcile.py
 
     receipt.issues.extend(validate(receipt))
     return receipt

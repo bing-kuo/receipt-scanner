@@ -1,24 +1,27 @@
-"""驗證規則。
+"""Validation rules.
 
-NOTE: 尚未實作,目前一律回傳空 list(代表沒發現問題,不代表資料正確)。
+NOTE: Not implemented yet; it currently always returns an empty list (meaning "no problems found",
+not "the data is correct").
 
-介面:`validate(receipt) -> list[Issue]`。每個 Issue 有 code、message 與 severity(warning / error)。
-`Receipt.needs_review` 目前以「有任何 issue 即需人工」為最保守預設,退回人工的條件在此一併定義。
+Interface: `validate(receipt) -> list[Issue]`. Each Issue has a code, a message and a severity (warning / error).
+`Receipt.needs_review` currently uses the most conservative default (any issue requires manual review);
+the criteria for sending a receipt to manual review should be defined here as well.
 
-範圍:
-- 金額:未稅與含稅金額的關係、品項加總與總額是否相符。
-- 統編:格式與檢查碼(財政部規則曾改版,實作時需確認當前版本)。
-- 日期:是否落在合理範圍。
-- 不驗證 QR 的 24 碼加密欄位(需要賣方 AES 金鑰),輸出也不得宣稱「已驗證真偽」。
+Scope:
+- Amounts: relationship between pre-tax and total amounts; whether item totals match the total.
+- Tax ID: format and check digit (the Ministry of Finance rules have changed before; confirm the current version).
+- Date: whether it falls in a plausible range.
+- The 24-character encrypted QR field is not verified (it needs the seller's AES key), and the output must
+  never claim the invoice is "verified authentic".
 
-驗收條件:
-- 每條規則至少有一個通過案例與一個觸發案例的測試。
-- 每條規則都註明觸發時的 severity 與理由。
-- 在 20 張樣本上,誤報(正確資料被標為有問題)與漏報的情況已記錄。
+Acceptance criteria:
+- Every rule has at least one passing case and one triggering case in tests.
+- Every rule documents its severity and rationale.
+- False positives (valid data flagged) and false negatives are recorded on 20 samples.
 """
 
 from receipt.models import Issue, Receipt
 
 
 def validate(receipt: Receipt) -> list[Issue]:
-    return []  # NOTE: 尚未實作
+    return []  # NOTE: not implemented yet

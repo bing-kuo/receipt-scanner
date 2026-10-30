@@ -1,20 +1,21 @@
-"""QR 解碼的薄包裝,以及電子發票左側 QR 的 77 碼固定欄位切割。
+"""Thin QR decoding wrapper, plus splitting of the 77 fixed characters of the Taiwan e-invoice left QR.
 
-依財政部電子發票 QR Code 規格,前 77 個字元是固定長度、無分隔符號:
+Per the Ministry of Finance e-invoice QR specification, the first 77 characters are fixed-length with no delimiters:
 
-    位置(0-based)  長度  欄位
-    0               10    發票字軌號碼(2 英文 + 8 數字)
-    10              7     開立日期(民國年 yyymmdd)
-    17              4     隨機碼
-    21              8     銷售額(未稅,16 進位)
-    29              8     總計額(含稅,16 進位)
-    37              8     買方統一編號(00000000 = 一般消費者)
-    45              8     賣方統一編號
-    53              24    加密驗證資訊(AES + Base64)
-    77              -     之後以 ":" 分隔:營業人自用區、品項筆數、編碼參數(0 Big5 / 1 UTF-8 / 2 Base64)、品項...
+    Offset (0-based)  Length  Field
+    0                 10      Invoice number (2 letters + 8 digits)
+    10                7       Issue date (ROC calendar, yyymmdd)
+    17                4       Random code
+    21                8       Sales amount (before tax, hex)
+    29                8       Total amount (including tax, hex)
+    37                8       Buyer tax ID (00000000 = consumer)
+    45                8       Seller tax ID
+    53                24      Encrypted verification info (AES + Base64)
+    77                -       Then ":"-delimited: seller private area, item count, encoding (0 Big5 / 1 UTF-8 / 2 Base64), items...
 
-注意:24 碼加密驗證資訊需要賣方的 AES 金鑰才能驗證,我們沒有,所以不驗,
-輸出也不能宣稱「已驗證真偽」。右側 QR 以 "**" 開頭,是品項續行,這個切片不處理。
+Note: the 24-character encrypted verification info can only be verified with the seller's AES key, which we do not have,
+so it is not verified and the output must never claim the invoice is "verified authentic". The right-side QR starts
+with "**" and continues the item list; it is out of scope for this slice.
 """
 
 import re
@@ -31,7 +32,7 @@ _NO_BUYER = "00000000"
 
 
 def decode_qr_texts(image: Image.Image) -> list[str]:
-    """回傳圖片中所有 QR code 的文字。解不出來回傳空 list。"""
+    """Return the text of every QR code in the image, or an empty list if none can be decoded."""
     results = zxingcpp.read_barcodes(image, formats=zxingcpp.BarcodeFormat.QRCode)
     return [r.text for r in results if r.valid]
 
@@ -46,7 +47,7 @@ def _roc_to_iso(s: str) -> str | None:
 
 
 def parse_einvoice_left(text: str) -> QRFields | None:
-    """解析左側 QR 前 77 碼。格式不符回傳 None(不是電子發票 QR,或解碼錯誤)。"""
+    """Parse the first 77 characters of the left QR. Return None on a format mismatch (not an e-invoice QR, or a decoding error)."""
     if len(text) < 77 or text.startswith("**"):
         return None
     invoice, roc, rand = text[0:10], text[10:17], text[17:21]
@@ -79,7 +80,7 @@ def parse_einvoice_left(text: str) -> QRFields | None:
 
 
 def find_einvoice_fields(image: Image.Image) -> QRFields | None:
-    """掃描圖片中所有 QR,回傳第一個符合電子發票左側格式的結果。"""
+    """Scan all QR codes in the image and return the first one matching the e-invoice left format."""
     for text in decode_qr_texts(image):
         fields = parse_einvoice_left(text)
         if fields:

@@ -1,4 +1,4 @@
-"""設定一律從環境變數讀(本機開發時由 .env 載入)。不印出、不記錄 key。"""
+"""Settings are read from environment variables (loaded from .env in local development). The key is never printed or logged."""
 
 import os
 from dataclasses import dataclass, field
@@ -6,7 +6,10 @@ from dataclasses import dataclass, field
 from dotenv import load_dotenv
 from pydantic import SecretStr
 
-MIN_CALLS, MAX_CALLS_CEILING = 1, 10  # 防呆邊界;真正的金額上限要在 OpenAI 後台設
+MIN_CALLS, MAX_CALLS_CEILING = (
+    1,
+    10,
+)  # Sanity bounds only; the real spend cap must be set in the OpenAI dashboard
 
 
 class ConfigError(RuntimeError):
@@ -15,15 +18,17 @@ class ConfigError(RuntimeError):
 
 @dataclass(frozen=True)
 class Settings:
-    # SecretStr:repr、str、asdict、vars 都只會顯示 **********;只在建立 client 時 get_secret_value()
+    # SecretStr: repr, str, asdict and vars only show **********; call get_secret_value() only when creating the client
     openai_api_key: SecretStr = field(repr=False)
     model: str
     timeout_s: float = 30.0
-    max_llm_calls: int = 5  # 單次執行的呼叫上限(含重試),防止迴圈燒錢
+    max_llm_calls: int = (
+        5  # Per-run call limit (including retries) to prevent runaway loops from burning money
+    )
 
     @classmethod
     def from_env(cls) -> "Settings":
-        load_dotenv()  # 讀取目前目錄的 .env;不存在就略過
+        load_dotenv()  # Load .env from the current directory; skip if missing
         key = os.environ.get("OPENAI_API_KEY", "").strip()
         model = os.environ.get("RECEIPT_MODEL", "").strip()
         if not key:

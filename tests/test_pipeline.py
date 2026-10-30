@@ -28,7 +28,7 @@ def test_no_qr_without_llm_fails_clearly(blank_image):
 
 
 def test_llm_path_goes_through_reconcile_stub(fake_invoice_image):
-    # reconcile 尚未實作;實作前應明確失敗,而不是悄悄給預設答案
+    # reconcile is not implemented yet; it must fail loudly rather than silently return a default answer
     ex = FakeExtractor()
     with pytest.raises(NotImplementedError):
         extract_receipt(fake_invoice_image, ex)
@@ -54,7 +54,7 @@ def test_cli_llm_requires_key(fake_invoice_image, tmp_path, monkeypatch, capsys)
     p = tmp_path / "x.png"
     fake_invoice_image.save(p)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.chdir(tmp_path)  # 避免讀到本機真實 .env
+    monkeypatch.chdir(tmp_path)  # avoid picking up a real local .env
     assert main(["extract", str(p), "--use-llm"]) == 2
     assert "OPENAI_API_KEY" in capsys.readouterr().err
 

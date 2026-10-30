@@ -11,7 +11,7 @@ repos:
       - id: ruff-format
   - repo: local
     hooks:
-      # .gitignore 擋不住 `git add -f`,這個 hook 才擋得住(--no-verify 仍可繞過,所以 CI 也要掃)
+      # .gitignore cannot stop `git add -f`, but this hook can (--no-verify still bypasses it, so CI scans too)
       - id: no-receipt-files
         name: 不可 commit 單據、圖片或輸出檔
         language: fail

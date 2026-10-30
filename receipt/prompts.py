@@ -1,20 +1,24 @@
-"""LLM 的 instructions(prompt)。
+"""Instructions (prompt) for the LLM.
 
-NOTE: 尚未實作。`--use-llm` 會因此回報錯誤,這是刻意的:避免用空 prompt 消耗 API 額度。
+NOTE: Not implemented yet. `--use-llm` therefore reports an error. This is intentional, to avoid spending API
+credit on an empty prompt.
 
-介面:`build_instructions() -> str`,回傳送給模型的 instructions。圖片由 llm.py 另外以 input 傳入,
-不要混進這個字串。輸出格式由 `models.LLMReceipt` 的 schema 約束。
+Interface: `build_instructions() -> str` returns the instructions sent to the model. The image is passed
+separately as input by llm.py and must not be mixed into this string. The output format is constrained by the
+`models.LLMReceipt` schema.
 
-限制與風險:
-- 收據上的文字是不可信輸入,可能含指令。prompt 必須明確區分「要抽取的資料」與「指令」。
-- 看不清楚的欄位回 null,不得猜測。
+Constraints and risks:
+- Text on a receipt is untrusted input and may contain instructions. The prompt must clearly separate
+  "data to extract" from "instructions".
+- Return null for fields that cannot be read; never guess.
 
-驗收條件:
-- 20 張樣本上各欄位的正確率、延遲與單張成本已量測並記錄。
-- 含指令字樣的樣本(例如「忽略以上指示」)不影響輸出,輸出仍符合 schema。
-- 是否把 QR 已解出的欄位提供給模型,已決定並記錄理由。
+Acceptance criteria:
+- Per-field accuracy, latency and per-receipt cost are measured and recorded on 20 samples.
+- Samples containing instruction-like text (e.g. "ignore the above instructions") do not affect the output,
+  which still conforms to the schema.
+- A decision on whether to pass the fields already decoded from the QR code to the model is made and the reason recorded.
 """
 
 
 def build_instructions() -> str:
-    raise NotImplementedError("prompt 尚未實作(見 receipt/prompts.py)")
+    raise NotImplementedError("prompt is not implemented yet (see receipt/prompts.py)")

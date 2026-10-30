@@ -23,7 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    os.umask(0o077)  # 之後若寫檔,預設只有自己可讀
+    os.umask(0o077)  # any file written later is readable by the owner only
     args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING, stream=sys.stderr)
     try:
@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"錯誤:{e}", file=sys.stderr)
         return 2
     except (APIError, ValueError) as e:
-        # 只印例外類型與 HTTP status,不印訊息:之後訊息可能夾帶 request/response 內容
+        # Print only the exception type and HTTP status, never the message: it may carry request/response content
         status = getattr(e, "status_code", None)
         print(f"錯誤:{type(e).__name__}" + (f"(HTTP {status})" if status else ""), file=sys.stderr)
         return 2

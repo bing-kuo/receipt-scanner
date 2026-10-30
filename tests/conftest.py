@@ -2,8 +2,8 @@ import pytest
 import qrcode
 from PIL import Image
 
-# 合成資料,非真實發票:字軌 AB12345678、民國 115 年 5 月 13 日、隨機碼 1234、
-# 未稅 0x4C=76、含稅 0x50=80、買方無統編、賣方統編 12345678、加密欄位 24 個 A。
+# Synthetic data, not a real invoice: number AB12345678, ROC date 115-05-13, random code 1234,
+# pre-tax 0x4C=76, total 0x50=80, no buyer tax ID, seller tax ID 12345678, 24 "A"s as the encrypted field.
 FAKE_LEFT = "AB12345678115051312340000004C000000500000000012345678" + "A" * 24
 FAKE_LEFT += ":**********:1:1:1:測試品項:1:80"
 
