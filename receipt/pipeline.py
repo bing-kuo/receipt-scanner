@@ -1,4 +1,4 @@
-"""主流程:QR 優先,LLM 只在明確要求時補欄位,最後交給 Bing 的 validate。"""
+"""主流程:QR 優先,LLM 只在明確要求時補欄位,最後執行 validate。"""
 
 import logging
 
@@ -34,7 +34,7 @@ def extract_receipt(image: Image.Image, extractor: Extractor | None = None) -> R
         receipt = _from_qr(qr)
     else:
         llm = extractor.extract(to_data_url(image))
-        receipt = reconcile(qr, llm)  # TODO(Bing) 見 reconcile.py
+        receipt = reconcile(qr, llm)  # 尚未實作,見 reconcile.py
 
     receipt.issues.extend(validate(receipt))
     return receipt

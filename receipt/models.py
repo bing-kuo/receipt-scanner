@@ -1,4 +1,4 @@
-"""資料結構。欄位是起手式,要抽哪些欄位由 Bing 決定,可以自由增減。"""
+"""資料結構。欄位為起手版本,可依需求增減。"""
 
 from typing import Literal
 
@@ -59,5 +59,5 @@ class Receipt(BaseModel):
 
     @property
     def needs_review(self) -> bool:
-        # TODO(Bing): 「什麼情況退回人工」是你的判斷,這裡只是最保守的預設。
+        # NOTE: 最保守的預設(有任何 issue 即需人工),退回人工的條件待定義,見 validate.py。
         return bool(self.issues)

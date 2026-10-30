@@ -1,6 +1,6 @@
 # acornsight-poc-receipt
 
-台灣電子發票辨識 PoC(Issue #10 第一個切片):QR decode 先解固定欄位,LLM 只補 QR 沒有的欄位,最後用規則交叉驗證。圖片進、JSON 出。
+台灣電子發票辨識 PoC(第一個切片):QR decode 先解固定欄位,LLM 只補 QR 沒有的欄位,最後用規則交叉驗證。圖片進、JSON 出。
 
 ## 快速開始
 
@@ -20,18 +20,25 @@ cp .env.example .env   # 填入 OPENAI_API_KEY 與 RECEIPT_MODEL
 python -m receipt extract path/to/receipt.jpg --use-llm
 ```
 
-## 結構與分工
+## 結構與狀態
 
-| 檔案 | 內容 | 誰寫 |
+| 檔案 | 內容 | 狀態 |
 | --- | --- | --- |
-| `receipt/qr.py` | QR 解碼薄包裝、77 碼欄位切割(附規格對照) | 骨架 |
-| `receipt/llm.py` | `Extractor` 介面、OpenAI 實作、重試、timeout、呼叫上限 | 骨架 |
-| `receipt/imageio.py`, `config.py`, `cli.py`, `pipeline.py` | 載入圖片、讀設定、CLI、主流程 | 骨架 |
-| `receipt/prompts.py` | LLM prompt | **Bing**(stub) |
-| `receipt/validate.py` | 金額、統編、日期等驗證規則,低信心判斷 | **Bing**(stub) |
-| `receipt/reconcile.py` | QR 與 LLM 不一致時以誰為準 | **Bing**(stub) |
+| `receipt/qr.py` | QR 解碼薄包裝、77 碼欄位切割(附規格對照) | 完成 |
+| `receipt/llm.py` | `Extractor` 介面、OpenAI 實作、重試、timeout、呼叫上限 | 完成 |
+| `receipt/imageio.py`, `config.py`, `cli.py`, `pipeline.py` | 載入圖片、讀設定、CLI、主流程 | 完成 |
+| `receipt/prompts.py` | LLM prompt | 待實作 |
+| `receipt/validate.py` | 金額、統編、日期等驗證規則,低信心判斷 | 待實作 |
+| `receipt/reconcile.py` | QR 與 LLM 不一致時的仲裁 | 待實作 |
 
-三個 stub 沒實作前,只用 QR 的路徑可以跑;加 `--use-llm` 會明確失敗(`NotImplementedError`),不會悄悄給預設答案。
+三個待實作的檔案,範圍、限制與驗收條件寫在各檔 docstring。沒實作前,只用 QR 的路徑可以跑;加 `--use-llm` 會明確失敗(`NotImplementedError`),不會悄悄給預設答案。
+
+## 開發流程
+
+- core 判斷(prompt、驗證規則、QR 與 LLM 的仲裁、低信心處理)由作者自行撰寫。
+- AI agent 負責骨架、測試與 review。
+- 作者能解釋每一段程式,才 merge。
+- 樣本與輸出的處理規則見下方「資安規則」。
 
 ## 預算(上限 US$5)
 
@@ -43,14 +50,14 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 ## 資安規則
 
 - API key 只放本機 `.env`(已 ignore),不進 git、Issue、聊天。`.env.example` 只有空值。
-- pre-commit(`pre-commit install`)跑 gitleaks,並擋下單據圖片、PDF、`result*.json`(連 `git add -f` 也擋)。`--no-verify` 能繞過,所以 CI 也要掃 secret(CI 檔見 PR 留言)。
+- pre-commit(`pre-commit install`)跑 gitleaks,並擋下單據圖片、PDF、`result*.json`(連 `git add -f` 也擋)。`--no-verify` 能繞過,所以 CI 也要掃 secret(`.github/workflows/ci.yml`)。
 - `.gitignore` 全 repo 擋 jpg/png/heic/pdf 與 `result*.json`。測試用的 QR 圖用 `qrcode` 即時產生,不放圖檔進 repo。
 - 圖片上限:檔案 15MB、5000 萬像素。
 - 樣本圖片與正確答案檔放 `samples/`(已 ignore),不 commit;說明見 `samples/README.md`。
 - 輸出只寫 stdout,不自動寫檔;若要存檔,存到 repo 外或 `out/`(已 ignore)。
 - log 只記次數與錯誤類型,不記 header、圖片、LLM 原始回應。
 - QR 的 24 碼加密驗證資訊需賣方 AES 金鑰,**不驗證**,輸出也不宣稱「已驗證真偽」。
-- 送第三方 LLM 前,供應商的資料保留與訓練政策要先查證並記在 Issue #10。程式用 `store=False`,但這**不等於 zero data retention**,供應商仍可能為 abuse monitoring 保留資料一段時間。
+- 送第三方 LLM 前,供應商的資料保留與訓練政策要先查證並記在專案紀錄。程式用 `store=False`,但這**不等於 zero data retention**,供應商仍可能為 abuse monitoring 保留資料一段時間。
 - 呼叫上限 `RECEIPT_MAX_LLM_CALLS` 限制在 1 到 10,且只算單次執行;**真正的上限是在 OpenAI 後台為專用 project 設定 budget limit**。
 
 ## TODO(之後的切片)

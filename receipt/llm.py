@@ -1,6 +1,6 @@
 """LLM client 的介面、重試、timeout 與呼叫上限。供應商不綁死:換家只要實作 Extractor。
 
-安全原則(Marcus M-3/M-5):不記錄 request header、圖片 base64、LLM 原始回應;
+安全原則:不記錄 request header、圖片 base64、LLM 原始回應;
 LLM 回傳只當資料,被 Pydantic schema 驗證後才使用,不會被當成指令或程式碼執行。
 """
 

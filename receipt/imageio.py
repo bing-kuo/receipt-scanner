@@ -8,7 +8,7 @@ from PIL import Image, ImageOps
 
 MAX_FILE_BYTES = 15 * 1024 * 1024
 MAX_PIXELS = 50_000_000  # 15MB 的 PNG 可能解壓成上億像素,先看 header 的尺寸
-LLM_MAX_SIDE = 1600  # 送 LLM 前縮圖,降低 token 成本;Bing 可依 benchmark 調整
+LLM_MAX_SIDE = 1600  # 送 LLM 前縮圖,降低 token 成本;可依 benchmark 調整
 
 
 class ImageError(ValueError):
