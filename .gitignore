@@ -239,3 +239,6 @@ out/
 *.[gG][iI][fF]
 *.[pP][dD][fF]
 [Rr][Ee][Ss][Uu][Ll][Tt]*.[jJ][sS][oO][nN]
+
+.DS_Store
+.github/.DS_Store
