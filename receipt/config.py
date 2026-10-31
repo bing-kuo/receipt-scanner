@@ -32,14 +32,16 @@ class Settings:
         key = os.environ.get("OPENAI_API_KEY", "").strip()
         model = os.environ.get("RECEIPT_MODEL", "").strip()
         if not key:
-            raise ConfigError("OPENAI_API_KEY 未設定,請複製 .env.example 為 .env 並填入。")
+            raise ConfigError("OPENAI_API_KEY is not set; copy .env.example to .env and fill it in.")
         if not model:
-            raise ConfigError("RECEIPT_MODEL 未設定,請在 .env 指定一個小型、支援圖片輸入的模型。")
+            raise ConfigError(
+                "RECEIPT_MODEL is not set; specify a small model with image input support in .env."
+            )
         try:
             timeout_s = float(os.environ.get("RECEIPT_TIMEOUT_S", "30"))
             max_calls = int(os.environ.get("RECEIPT_MAX_LLM_CALLS", "5"))
         except ValueError as e:
-            raise ConfigError("RECEIPT_TIMEOUT_S 或 RECEIPT_MAX_LLM_CALLS 不是有效數字") from e
+            raise ConfigError("RECEIPT_TIMEOUT_S or RECEIPT_MAX_LLM_CALLS is not a valid number") from e
         return cls(
             openai_api_key=SecretStr(key),
             model=model,

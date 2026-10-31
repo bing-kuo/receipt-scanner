@@ -93,5 +93,5 @@ def test_oversized_pixels_rejected(tmp_path, monkeypatch):
     p = tmp_path / "big.png"
     Image.new("L", (300, 300)).save(p)
     monkeypatch.setattr(imageio, "MAX_PIXELS", 1000)
-    with pytest.raises(imageio.ImageError, match="像素"):
+    with pytest.raises(imageio.ImageError, match="too many pixels"):
         imageio.load_image(p)

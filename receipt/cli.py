@@ -15,9 +15,13 @@ from receipt.pipeline import NoQRFound, extract_receipt
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="receipt", description="Receipt recognition PoC")
     sub = p.add_subparsers(dest="cmd", required=True)
-    ex = sub.add_parser("extract", help="圖片進、JSON 出(stdout)")
+    ex = sub.add_parser("extract", help="image in, JSON out (stdout)")
     ex.add_argument("image", type=Path)
-    ex.add_argument("--use-llm", action="store_true", help="呼叫 LLM 補欄位(會花錢,預設關閉)")
+    ex.add_argument(
+        "--use-llm",
+        action="store_true",
+        help="call the LLM to fill missing fields (costs money, off by default)",
+    )
     ex.add_argument("-v", "--verbose", action="store_true")
     return p
 
@@ -34,12 +38,12 @@ def main(argv: list[str] | None = None) -> int:
             extractor = OpenAIExtractor(settings, CallBudget(settings.max_llm_calls))
         receipt = extract_receipt(image, extractor)
     except (ImageError, ConfigError, NoQRFound, BudgetExceeded, NotImplementedError, RuntimeError) as e:
-        print(f"錯誤:{e}", file=sys.stderr)
+        print(f"error: {e}", file=sys.stderr)
         return 2
     except (APIError, ValueError) as e:
         # Print only the exception type and HTTP status, never the message: it may carry request/response content
         status = getattr(e, "status_code", None)
-        print(f"錯誤:{type(e).__name__}" + (f"(HTTP {status})" if status else ""), file=sys.stderr)
+        print(f"error: {type(e).__name__}" + (f" (HTTP {status})" if status else ""), file=sys.stderr)
         return 2
     print(receipt.model_dump_json(indent=2))
     return 0

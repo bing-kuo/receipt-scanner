@@ -30,7 +30,9 @@ def extract_receipt(image: Image.Image, extractor: Extractor | None = None) -> R
 
     if extractor is None:
         if qr is None:
-            raise NoQRFound("找不到電子發票 QR code;可加 --use-llm 讓 LLM 讀取(會產生 API 費用)")
+            raise NoQRFound(
+                "No e-invoice QR code found; add --use-llm to let the LLM read it (incurs API cost)"
+            )
         receipt = _from_qr(qr)
     else:
         llm = extractor.extract(to_data_url(image))

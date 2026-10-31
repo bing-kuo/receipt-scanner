@@ -30,7 +30,7 @@ class CallBudget:
 
     def consume(self) -> None:
         if self.used >= self.max_calls:
-            raise BudgetExceeded(f"已達單次執行的 LLM 呼叫上限({self.max_calls})")
+            raise BudgetExceeded(f"LLM call limit per run reached ({self.max_calls})")
         self.used += 1
 
 
@@ -71,4 +71,4 @@ class OpenAIExtractor:
                 last_err = e
                 # Log only the error type and attempt count, never the content
                 log.warning("LLM call failed (attempt %d): %s", attempt + 1, type(e).__name__)
-        raise RuntimeError("LLM 抽取失敗,建議退回人工") from last_err
+        raise RuntimeError("LLM extraction failed; fall back to manual review") from last_err
