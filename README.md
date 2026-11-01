@@ -7,8 +7,8 @@
 需要 Python 3.13(`.python-version`)。
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install --require-hashes -r requirements-dev.txt
+uv venv && source .venv/bin/activate   # 需先 brew install uv;Python 版本依 .python-version
+uv pip install --require-hashes -r requirements-dev.txt
 python -m pytest -q
 uv pip install pre-commit && pre-commit install   # 只防誤 commit,不防 --no-verify
 
