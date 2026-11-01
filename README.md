@@ -33,11 +33,11 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 
 三個待實作的檔案,範圍、限制與驗收條件寫在各檔 docstring。沒實作前,只用 QR 的路徑可以跑;加 `--use-llm` 會明確失敗(`NotImplementedError`),不會悄悄給預設答案。
 
-## 開發流程
+## 開發
 
-- core 判斷(prompt、驗證規則、QR 與 LLM 的仲裁、低信心處理)由作者自行撰寫。
-- AI agent 負責骨架、測試與 review。
-- 作者能解釋每一段程式,才 merge。
+- 環境與測試:見上方「快速開始」。commit 前會跑 pre-commit(ruff、gitleaks 等),CI 會再跑一次 lint、測試與 secret 掃描。
+- Commit message 與 PR 標題用英文 Conventional Commits(`type: subject`,例如 `feat: add QR decoder`)。
+- PR 需通過 CI 並經過 review 才能 merge,merge 用 squash。
 - 樣本與輸出的處理規則見下方「資安規則」。
 
 ## 預算(上限 US$5)
