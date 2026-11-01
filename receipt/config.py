@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass, field
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from pydantic import SecretStr
 
 MIN_CALLS, MAX_CALLS_CEILING = (
@@ -28,7 +28,7 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        load_dotenv()  # Load .env from the current directory; skip if missing
+        load_dotenv(find_dotenv(usecwd=True))  # Load .env from the current directory; skip if missing
         key = os.environ.get("OPENAI_API_KEY", "").strip()
         model = os.environ.get("RECEIPT_MODEL", "").strip()
         if not key:
