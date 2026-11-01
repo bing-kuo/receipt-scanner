@@ -15,6 +15,7 @@ Acceptance criteria:
 - Per-field accuracy, latency and per-receipt cost are measured and recorded on 20 samples.
 - Samples containing instruction-like text (e.g. "ignore the above instructions") do not affect the output,
   which still conforms to the schema.
+- seller_name and items are always null because they are not printed on the Taiwan e-invoice proof slip.
 """
 
 import textwrap
