@@ -218,3 +218,27 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- acornsight-poc-receipt ---
+# Sample images and answer files are never committed (they contain personal data); images, PDFs and output files are ignored repo-wide, not just under samples/
+samples/*
+!samples/README.md
+out/
+*.out.json
+.env.*
+!.env.example
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[pP][nN][gG]
+*.[hH][eE][iI][cC]
+*.[hH][eE][iI][fF]
+*.[wW][eE][bB][pP]
+*.[tT][iI][fF]
+*.[tT][iI][fF][fF]
+*.[bB][mM][pP]
+*.[gG][iI][fF]
+*.[pP][dD][fF]
+[Rr][Ee][Ss][Uu][Ll][Tt]*.[jJ][sS][oO][nN]
+
+.DS_Store
+.github/.DS_Store

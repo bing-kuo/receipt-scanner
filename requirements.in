@@ -1,0 +1,5 @@
+pydantic
+pillow
+zxing-cpp
+openai
+python-dotenv
