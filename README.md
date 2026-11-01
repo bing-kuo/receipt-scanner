@@ -10,7 +10,7 @@
 python3 -m venv .venv && source .venv/bin/activate
 pip install --require-hashes -r requirements-dev.txt
 python -m pytest -q
-pip install pre-commit && pre-commit install   # 只防誤 commit,不防 --no-verify
+uv pip install pre-commit && pre-commit install   # 只防誤 commit,不防 --no-verify
 
 # 只用 QR(不花錢,不需要 key)
 python -m receipt extract path/to/receipt.jpg
