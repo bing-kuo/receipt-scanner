@@ -27,7 +27,7 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 | `receipt/qr.py` | QR 解碼薄包裝、77 碼欄位切割(附規格對照) | 完成 |
 | `receipt/llm.py` | `Extractor` 介面、OpenAI 實作、重試、timeout、呼叫上限 | 完成 |
 | `receipt/imageio.py`, `config.py`, `cli.py`, `pipeline.py` | 載入圖片、讀設定、CLI、主流程 | 完成 |
-| `receipt/prompts.py` | LLM prompt | 待實作 |
+| `receipt/prompts.py` | LLM prompt | 完成 |
 | `receipt/validate.py` | 金額、統編、日期等驗證規則,低信心判斷 | 待實作 |
 | `receipt/reconcile.py` | QR 與 LLM 不一致時的仲裁 | 待實作 |
 
