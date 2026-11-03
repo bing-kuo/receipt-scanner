@@ -29,7 +29,7 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 | `receipt/imageio.py`, `config.py`, `cli.py`, `pipeline.py` | 載入圖片、讀設定、CLI、主流程 | 完成 |
 | `receipt/prompts.py` | LLM prompt | 完成 |
 | `receipt/validate.py` | 金額、統編、日期等驗證規則,低信心判斷 | 待實作 |
-| `receipt/reconcile.py` | QR 與 LLM 不一致時的仲裁 | 待實作 |
+| `receipt/reconcile.py` | QR 與 LLM 不一致時的仲裁 | 完成 |
 
 三個待實作的檔案,範圍、限制與驗收條件寫在各檔 docstring。沒實作前,只用 QR 的路徑可以跑;加 `--use-llm` 會明確失敗(`NotImplementedError`),不會悄悄給預設答案。
 
