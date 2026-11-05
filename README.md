@@ -1,6 +1,8 @@
-# acornsight-poc-receipt
+# receipt-scanner
 
 台灣電子發票辨識 PoC(第一個切片):QR decode 先解固定欄位,LLM 只補 QR 沒有的欄位,最後用規則交叉驗證。圖片進、JSON 出。
+
+> **使用限制**:`receipt/validate.py` 尚未實作(進度見 [#8](https://github.com/bing-kuo/receipt-scanner/issues/8)、[#9](https://github.com/bing-kuo/receipt-scanner/issues/9)),輸出的金額與統編沒有經過交叉驗證,**不可用於金額核對或報帳**,只能當作輔助參考。範例與測試資料全部是假資料。
 
 ## 快速開始
 
@@ -65,3 +67,7 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 - QR 77 碼之後的品項明細解析(編碼參數 0 Big5 / 1 UTF-8 / 2 Base64)與右側 `**` QR。
 - 只送裁切過的非 QR 區域給 LLM(資料最小化)。
 - 20 張樣本的 benchmark:欄位正確率、延遲、成本。
+
+## License
+
+[MIT](LICENSE)
