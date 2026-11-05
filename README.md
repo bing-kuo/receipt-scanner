@@ -31,7 +31,7 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 | `receipt/validate.py` | 金額、統編、日期等驗證規則,低信心判斷 | 待實作 |
 | `receipt/reconcile.py` | QR 與 LLM 不一致時的仲裁 | 完成 |
 
-三個待實作的檔案,範圍、限制與驗收條件寫在各檔 docstring。沒實作前,只用 QR 的路徑可以跑;加 `--use-llm` 會明確失敗(`NotImplementedError`),不會悄悄給預設答案。
+目前只剩 `validate.py` 待實作,範圍、限制與驗收條件寫在該檔 docstring。只用 QR 的路徑可以直接跑;加 `--use-llm` 會實際呼叫 LLM 補欄位,再與 QR 結果交叉比對。`validate.py` 完成前,輸出不要拿去做金額或報帳用途。
 
 ## 開發
 

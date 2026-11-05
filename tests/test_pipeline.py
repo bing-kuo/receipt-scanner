@@ -27,7 +27,7 @@ def test_no_qr_without_llm_fails_clearly(blank_image):
         extract_receipt(blank_image)
 
 
-def test_llm_path_goes_through_reconcile_stub(fake_invoice_image):
+def test_llm_path_calls_extractor_and_reconciles(fake_invoice_image):
     ex = FakeExtractor()
     r = extract_receipt(fake_invoice_image, ex)
 
