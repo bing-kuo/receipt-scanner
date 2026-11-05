@@ -44,9 +44,9 @@ def pick(name, qr_val, llm_val) -> tuple[str | int | None, Source | None, Issue 
         return qr_val, "qr", None
 
     # both present but different
-    issue = Issue(
-        code=f"{name}_conflict", message=f"{name} differs: qr={qr_val}, llm={llm_val}", severity="error"
-    )
+    # Do not embed raw values: LLM output is untrusted and may carry newlines or very long text
+    # (log injection). The chosen QR value is already in the receipt field itself.
+    issue = Issue(code=f"{name}_conflict", message=f"{name} differs between QR and LLM", severity="error")
     value, source = qr_val, "qr"
     return value, source, issue
 

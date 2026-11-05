@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 Source = Literal["qr", "llm"]
 
@@ -57,6 +57,7 @@ class Receipt(BaseModel):
     sources: dict[str, Source] = Field(default_factory=dict)
     issues: list[Issue] = Field(default_factory=list)
 
+    @computed_field  # serialized, so downstream consumers cannot miss the flag
     @property
     def needs_review(self) -> bool:
         # NOTE: Most conservative default (any issue requires manual review). The criteria for manual review are TBD, see validate.py.
