@@ -17,7 +17,7 @@
 -
 
 ## Security
-<!-- 沒碰到的項目寫「無」,不要刪掉 -->
+<!-- 沒碰到的項目寫「無」,不要刪掉。範例、log、截圖一律用假資料;不要貼 key、token、真實單據或個資 -->
 - 資料 / key / 外部呼叫:
 - 新增 dependency:<!-- 無,或列出套件與版本;hash 是否已鎖定 -->
 - 不可信輸入(prompt injection、畸形資料)時的行為:<!-- 對應哪個 test -->
@@ -37,3 +37,4 @@
 - [ ] CI 綠燈(`test`)
 - [ ] secret scan 通過(`secret-scan`、pre-commit gitleaks)
 - [ ] 文件已更新(README、docstring)
+- [ ] 測試與 PR 內容只用假資料,沒有 key、token、真實單據或個資
