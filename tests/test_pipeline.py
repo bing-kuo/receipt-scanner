@@ -13,7 +13,7 @@ class FakeExtractor:
     def extract(self, image_data_url: str) -> LLMReceipt:
         self.calls += 1
         assert image_data_url.startswith("data:image/jpeg;base64,")
-        return LLMReceipt(seller_name="測試商店")
+        return LLMReceipt(seller_tax_id="00000000")
 
 
 def test_qr_only_makes_no_llm_call(fake_invoice_image):
@@ -27,12 +27,12 @@ def test_no_qr_without_llm_fails_clearly(blank_image):
         extract_receipt(blank_image)
 
 
-def test_llm_path_goes_through_reconcile_stub(fake_invoice_image):
-    # reconcile is not implemented yet; it must fail loudly rather than silently return a default answer
+def test_llm_path_calls_extractor_and_reconciles(fake_invoice_image):
     ex = FakeExtractor()
-    with pytest.raises(NotImplementedError):
-        extract_receipt(fake_invoice_image, ex)
+    r = extract_receipt(fake_invoice_image, ex)
+
     assert ex.calls == 1
+    assert r.seller_tax_id == "12345678"
 
 
 def test_budget_blocks_extra_calls():

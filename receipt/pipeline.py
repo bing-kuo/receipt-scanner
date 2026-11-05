@@ -36,7 +36,7 @@ def extract_receipt(image: Image.Image, extractor: Extractor | None = None) -> R
         receipt = _from_qr(qr)
     else:
         llm = extractor.extract(to_data_url(image))
-        receipt = reconcile(qr, llm)  # Not implemented yet, see reconcile.py
+        receipt = reconcile(qr, llm)
 
     receipt.issues.extend(validate(receipt))
     return receipt
