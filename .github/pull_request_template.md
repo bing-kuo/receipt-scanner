@@ -34,7 +34,5 @@
 - 無
 
 ## Checklist
-- [ ] CI 綠燈(`test`)
-- [ ] secret scan 通過(`secret-scan`、pre-commit gitleaks)
 - [ ] 文件已更新(README、docstring)
 - [ ] 測試與 PR 內容只用假資料,沒有 key、token、真實單據或個資
