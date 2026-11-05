@@ -44,7 +44,10 @@ class Issue(BaseModel):
 
 
 class Receipt(BaseModel):
-    """Final output. `sources` records whether each field came from the QR code or the LLM."""
+    """Final output. `sources` records whether each field came from the QR code or the LLM.
+
+    `source="qr"` only means the value was read from the QR text; it does not mean the value is verified.
+    """
 
     invoice_number: str | None = None
     date: str | None = None
@@ -60,5 +63,5 @@ class Receipt(BaseModel):
     @computed_field  # serialized, so downstream consumers cannot miss the flag
     @property
     def needs_review(self) -> bool:
-        # NOTE: Most conservative default (any issue requires manual review). The criteria for manual review are TBD, see validate.py.
+        # Any issue (warning or error) requires manual review; see validate.py for the rules.
         return bool(self.issues)

@@ -11,6 +11,8 @@ Arbitration rules:
 - Both differ: use the QR value and record an error. QR is structured data and more reliable than
   LLM reading, but a truncated or misread QR is not caught here; validate.py is the real defense.
 - Neither: the field stays empty and an error is recorded.
+- LLM value with an invalid format (validate.llm_value_is_valid): dropped before arbitration and an
+  error is recorded, so it never reaches a final field.
 
 Constraints and risks:
 - QR data is structured and usually more reliable than OCR, but it can be truncated or misread.
@@ -26,6 +28,7 @@ Acceptance criteria:
 """
 
 from receipt.models import Issue, LLMReceipt, QRFields, Receipt, Source
+from receipt.validate import llm_value_is_valid
 
 
 def pick(name, qr_val, llm_val) -> tuple[str | int | None, Source | None, Issue | None]:
@@ -57,6 +60,16 @@ def reconcile(qr: QRFields | None, llm: LLMReceipt) -> Receipt:
     for name in ["invoice_number", "date", "seller_tax_id", "total_amount"]:
         qr_val = None if qr is None else getattr(qr, name)
         llm_val = getattr(llm, name)
+        if llm_val is not None and not llm_value_is_valid(name, llm_val):
+            # M-1: malformed LLM output never reaches a final field; message stays fixed text
+            r.issues.append(
+                Issue(
+                    code=f"{name}_llm_invalid",
+                    message=f"{name} from LLM has an invalid format",
+                    severity="error",
+                )
+            )
+            llm_val = None
         value, source, issue = pick(name, qr_val, llm_val)
         setattr(r, name, value)
         if source is not None:
