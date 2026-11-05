@@ -41,6 +41,16 @@ MIN_DATE = dt.date(2012, 1, 1)  # before the e-invoice QR format was in wide use
 _INVOICE_NUMBER = re.compile(r"[A-Z]{2}[0-9]{8}")
 _TAX_ID = re.compile(r"[0-9]{8}")
 _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+# Tax ID (unified business number) check weights, one per digit, left to right.
+# Each digit is multiplied by its weight, the digits of each product are summed
+# (e.g. 18 -> 1 + 8), and the total must be divisible by 5. Before the 2023
+# revision the divisor was 10; every number valid under the old rule is still
+# valid under the new one, so checking divisibility by 5 accepts both.
+# Special case: when the 7th digit is 7, its product is 28 -> 10, which may
+# count as 1 or 0, so the ID is valid if either total passes.
+# Source: Ministry of Finance, Fiscal Information Agency, "Revised check digit
+# logic for the business unified number":
+# https://www.fia.gov.tw/singlehtml/3?cntId=c4d9cff38c8642ef8872774ee9987283
 _WEIGHTS = (1, 2, 1, 2, 1, 2, 4, 1)
 
 
