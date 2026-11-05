@@ -219,7 +219,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# --- acornsight-poc-receipt ---
+# --- receipt-scanner ---
 # Sample images and answer files are never committed (they contain personal data); images, PDFs and output files are ignored repo-wide, not just under samples/
 samples/*
 !samples/README.md
