@@ -2,7 +2,7 @@
 
 台灣電子發票辨識 PoC(第一個切片):QR decode 先解固定欄位,LLM 只補 QR 沒有的欄位,最後用規則交叉驗證。圖片進、JSON 出。
 
-> **使用限制**:`receipt/validate.py` 尚未實作(進度見 [#8](https://github.com/bing-kuo/receipt-scanner/issues/8)、[#9](https://github.com/bing-kuo/receipt-scanner/issues/9)),輸出的金額與統編沒有經過交叉驗證,**不可用於金額核對或報帳**,只能當作輔助參考。範例與測試資料全部是假資料。
+> **使用限制**:`receipt/validate.py` 只檢查格式、金額一致性、統編檢查碼與日期範圍,無法驗證 QR 加密欄位,偽造但內容一致的 QR 仍可能通過。輸出**不可直接用於金額核對或報帳**,`needs_review` 為 true 的單據必須人工確認,實際報帳前一律需要人工審核。範例與測試資料全部是假資料。
 
 ## 快速開始
 
@@ -30,10 +30,10 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 | `receipt/llm.py` | `Extractor` 介面、OpenAI 實作、重試、timeout、呼叫上限 | 完成 |
 | `receipt/imageio.py`, `config.py`, `cli.py`, `pipeline.py` | 載入圖片、讀設定、CLI、主流程 | 完成 |
 | `receipt/prompts.py` | LLM prompt | 完成 |
-| `receipt/validate.py` | 金額、統編、日期等驗證規則,低信心判斷 | 待實作 |
+| `receipt/validate.py` | 金額、統編、日期等驗證規則,低信心判斷 | 完成 |
 | `receipt/reconcile.py` | QR 與 LLM 不一致時的仲裁 | 完成 |
 
-目前只剩 `validate.py` 待實作,範圍、限制與驗收條件寫在該檔 docstring。只用 QR 的路徑可以直接跑;加 `--use-llm` 會實際呼叫 LLM 補欄位,再與 QR 結果交叉比對。`validate.py` 完成前,輸出不要拿去做金額或報帳用途。
+各項驗證規則與限制寫在 `validate.py` 的 docstring。只用 QR 的路徑可以直接跑;加 `--use-llm` 會實際呼叫 LLM 補欄位,再與 QR 結果交叉比對。輸出只能當輔助參考,報帳前需人工審核。
 
 ## 開發
 
