@@ -47,6 +47,8 @@ class Receipt(BaseModel):
     """Final output. `sources` records whether each field came from the QR code or the LLM.
 
     `source="qr"` only means the value was read from the QR text; it does not mean the value is verified.
+    A warning, including when both amount sources are qr, does not mean the invoice is authentic or correct.
+    Any issue (warning or error) keeps `needs_review` true.
     """
 
     invoice_number: str | None = None

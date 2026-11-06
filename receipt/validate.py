@@ -5,27 +5,39 @@ Interface:
 - `llm_value_is_valid(name, value) -> bool` is used by reconcile.py to reject malformed LLM-only values
   before they reach a final field (M-1).
 
-`Receipt.needs_review` is true whenever any issue (warning or error) exists. In particular any QR/LLM
+`Receipt.needs_review` is true whenever any issue (warning or error) exists. Warnings are not filtered
+and do not mean the invoice is authentic, correct, or exempt from review. In particular any QR/LLM
 disagreement, any LLM-only value and any rule below sends the receipt to manual review.
 
 Issue messages are fixed text and never embed field values: values may come from the LLM or from a
 forged QR and are untrusted (log injection, prompt injection).
 
-Rules (all severity "error" unless noted):
-- Amounts (integers only, never float):
+Rules (severity "error" unless noted):
+- Amounts (integers only, never bool or float):
   - total_amount > 0 and <= MAX_AMOUNT.
-  - sales_amount <= total_amount. sales_amount == 0 is allowed (tax cannot be separated) and skips
-    the tax check.
-  - When sales_amount > 0, tax = total - sales must equal round(sales * 5%) within TAX_TOLERANCE.
-    Zero-rated / tax-exempt invoices will be flagged; that is a known false positive.
+  - sales_amount <= total_amount is checked before the tax rule. sales_amount == 0 is allowed
+    (tax cannot be separated) and skips the tax check. That skip is unchanged.
+  - When sales_amount > 0 and total_amount - sales_amount == 0, and sources["sales_amount"] and
+    sources["total_amount"] are both exactly "qr": warning `tax_amount_not_applicable`.
+    This means VAT may not apply (zero-rated or exempt), or the QR may have been deliberately
+    forged so the two amounts match. It is not a verification, and it does not mean the invoice
+    is authentic or correct. Exact equality does not use TAX_TOLERANCE, so a small sale whose
+    rounded 5% tax is 0 or 1 still warns when both sources are qr. Missing, llm, or any other
+    provenance does not downgrade this case.
+  - Otherwise, when sales_amount > 0, tax = total - sales must equal round(sales * 5%) within
+    TAX_TOLERANCE (1 NTD). A non-zero difference keeps that check. total == sales with either
+    source not exactly "qr" also keeps it: outside the tolerance the code stays
+    `tax_amount_mismatch`, an error. Nothing here adds tax_type or rewrites either amount.
 - Tax ID (seller and buyer): 8 ASCII digits and a valid check digit. Weights 1,2,1,2,1,2,4,1; sum the
   digits of each product. Since 2023 the Ministry of Finance rule is "sum divisible by 5" (previously
   10); every old-rule ID also passes the new rule, so only the new rule is checked. When the 7th digit
   is 7 its product (28) contributes either 1 or 0, and the ID is valid if either sum passes.
 - Date: ISO 8601 calendar date between MIN_DATE and today + 1 day.
 - Not covered: item totals (items are not extracted yet) and the 24-character encrypted QR field,
-  which needs the seller's AES key. A consistent forged QR can pass every rule; passing validation
-  never means the invoice is verified authentic.
+  which needs the seller's AES key. A forged QR whose amounts satisfy the 5% tolerance can still
+  produce no issues. A forged QR with total equal to sales is only the warning above, which is
+  not a verification. Passing validation, or holding that warning, never means the invoice is
+  verified authentic. Every issue still needs manual review.
 """
 
 import datetime as dt
@@ -100,6 +112,15 @@ def _error(code: str, message: str) -> Issue:
     return Issue(code=code, message=message, severity="error")
 
 
+def _warning(code: str, message: str) -> Issue:
+    return Issue(code=code, message=message, severity="warning")
+
+
+def _both_amount_sources_are_qr(receipt: Receipt) -> bool:
+    # Exact "qr" only. Missing, "llm", or any other provenance must not downgrade the check.
+    return receipt.sources.get("sales_amount") == "qr" and receipt.sources.get("total_amount") == "qr"
+
+
 def validate(receipt: Receipt, today: dt.date | None = None) -> list[Issue]:
     today = today or dt.date.today()
     issues: list[Issue] = []
@@ -114,11 +135,23 @@ def validate(receipt: Receipt, today: dt.date | None = None) -> list[Issue]:
                     _error("sales_amount_invalid", "sales_amount is negative or exceeds total_amount")
                 )
             elif sales > 0:
-                expected = (sales * TAX_RATE_PERCENT + 50) // 100  # round half up, integer only
-                if abs((total - sales) - expected) > TAX_TOLERANCE:
+                # sales > total was already rejected. sales == 0 never reaches this branch.
+                if total - sales == 0 and _both_amount_sources_are_qr(receipt):
+                    # Possible no VAT, or a QR forged so the amounts match. Not a verification.
+                    # Exact equality does not use TAX_TOLERANCE. Amounts are not rewritten.
                     issues.append(
-                        _error("tax_amount_mismatch", "tax amount does not match 5% of sales_amount")
+                        _warning(
+                            "tax_amount_not_applicable",
+                            "total_amount equals sales_amount and both come from QR; "
+                            "this may be no VAT or a QR forged so the amounts match, and is not a verification",
+                        )
                     )
+                else:
+                    expected = (sales * TAX_RATE_PERCENT + 50) // 100  # round half up, integer only
+                    if abs((total - sales) - expected) > TAX_TOLERANCE:
+                        issues.append(
+                            _error("tax_amount_mismatch", "tax amount does not match 5% of sales_amount")
+                        )
 
     for name in ("seller_tax_id", "buyer_tax_id"):
         value = getattr(receipt, name)

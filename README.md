@@ -2,7 +2,7 @@
 
 台灣電子發票辨識 PoC(第一個切片):QR decode 先解固定欄位,LLM 只補 QR 沒有的欄位,最後用規則交叉驗證。圖片進、JSON 出。
 
-> **使用限制**:`receipt/validate.py` 只檢查格式、金額一致性、統編檢查碼與日期範圍,無法驗證 QR 加密欄位,偽造但內容一致的 QR 仍可能通過。輸出**不可直接用於金額核對或報帳**,`needs_review` 為 true 的單據必須人工確認,實際報帳前一律需要人工審核。範例與測試資料全部是假資料。
+> **使用限制**:`receipt/validate.py` 只檢查格式、金額一致性、統編檢查碼與日期範圍,無法驗證 QR 加密欄位,偽造但內容一致的 QR 仍可能通過。`sales_amount` 與 `total_amount` 都大於零、差額恰為 0,且 `sources` 裡這兩個欄位都正好是 `qr` 時,結果是 warning `tax_amount_not_applicable`:這表示可能不適用營業稅,或 QR 被刻意做成 total 等於 sales,不是驗證,也不代表發票正確或真實。每一筆 issue(含 warning)都必須人工覆核,`needs_review` 維持 true,warning 不會被濾掉。差額不是 0 時仍用既有的 5% 與 tolerance 1;`sales_amount == 0` 仍略過稅額檢查,這個行為不變。來源缺漏、不是恰好 `qr`,或只有 LLM 時,不得降成這個 warning。輸出**不可直接用於金額核對或報帳**,實際報帳前一律需要人工審核。範例與測試資料全部是假資料。
 
 ## 快速開始
 
@@ -33,7 +33,7 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 | `receipt/validate.py` | 金額、統編、日期等驗證規則,低信心判斷 | 完成 |
 | `receipt/reconcile.py` | QR 與 LLM 不一致時的仲裁 | 完成 |
 
-各項驗證規則與限制寫在 `validate.py` 的 docstring。只用 QR 的路徑可以直接跑;加 `--use-llm` 會實際呼叫 LLM 補欄位,再與 QR 結果交叉比對。輸出只能當輔助參考,報帳前需人工審核。
+各項驗證規則與限制寫在 `validate.py` 的 docstring。`tax_amount_not_applicable`(warning)只表示可能不適用營業稅,或 QR 被刻意做成 total 等於 sales,不是驗證;每一筆 issue(含 warning)都要人工覆核。`sales_amount == 0` 仍略過稅額檢查。只用 QR 的路徑可以直接跑;加 `--use-llm` 會實際呼叫 LLM 補欄位,再與 QR 結果交叉比對。輸出只能當輔助參考,報帳前需人工審核。
 
 ## 開發
 

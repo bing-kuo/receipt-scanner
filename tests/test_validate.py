@@ -150,3 +150,220 @@ def test_hostile_llm_strings_never_reach_output(value):
 )
 def test_llm_value_format(name, value, ok):
     assert llm_value_is_valid(name, value) is ok
+
+
+QR_AMOUNTS = {"sales_amount": "qr", "total_amount": "qr"}
+TAX_NOT_APPLICABLE = (
+    "total_amount equals sales_amount and both come from QR; "
+    "this may be no VAT or a QR forged so the amounts match, and is not a verification"
+)
+
+
+def synthetic_left(sales: int, total: int, seller: str = VALID_ID) -> str:
+    """Anonymous synthetic left-QR text built from the fixture. Not a real invoice."""
+    return FAKE_LEFT[:21] + f"{sales:08X}" + f"{total:08X}" + FAKE_LEFT[37:45] + seller + FAKE_LEFT[53:]
+
+
+def test_qr_equal_amounts_warn_and_need_review():
+    # 59 and 100 are outside the 5% tolerance, so the old rule was an error.
+    # 10 is inside it (expected tax 1, |0-1| == 1). Exact equality does not use that tolerance.
+    for sales in (59, 100, 10):
+        r = ok_receipt(sales_amount=sales, total_amount=sales, sources=dict(QR_AMOUNTS))
+        before = (r.sales_amount, r.total_amount, dict(r.sources))
+        issues = validate(r, TODAY)
+        assert [(i.code, i.severity, i.message) for i in issues] == [
+            ("tax_amount_not_applicable", "warning", TAX_NOT_APPLICABLE)
+        ]
+        assert "\n" not in issues[0].message
+        assert str(sales) not in issues[0].message
+        assert (r.sales_amount, r.total_amount, r.sources) == before
+        assert "tax_type" not in type(r).model_fields
+        r.issues.extend(issues)
+        assert r.needs_review is True
+        dumped = r.model_dump()
+        assert dumped["needs_review"] is True
+        assert dumped["issues"][0]["severity"] == "warning"
+        assert "tax_type" not in dumped
+
+
+@pytest.mark.parametrize("total", [101, 102, 103, 107])
+def test_nonzero_gap_outside_tolerance_stays_error(total):
+    """Tolerance is |tax - round(sales * 5%)| <= 1, not |total - sales| <= 1.
+
+    sales 100 expects tax 5. total 101 is tax 1 and |1-5| == 4, so it stays an error.
+    total 102 is tax 2 (|2-5| == 3). total 103 is tax 3 (|3-5| == 2).
+    """
+    sales = 100
+    expected = (sales * 5 + 50) // 100  # same round-half-up as validate.py
+    assert expected == 5
+    assert abs((total - sales) - expected) > 1
+    r = ok_receipt(sales_amount=sales, total_amount=total, sources=dict(QR_AMOUNTS))
+    issues = validate(r, TODAY)
+    assert [(i.code, i.severity) for i in issues] == [("tax_amount_mismatch", "error")]
+    r.issues.extend(issues)
+    assert r.needs_review is True
+
+
+@pytest.mark.parametrize("total", [104, 106])
+def test_nonzero_gap_inside_tolerance_is_unchanged(total):
+    sales = 100
+    expected = (sales * 5 + 50) // 100  # 5
+    assert abs((total - sales) - expected) <= 1
+    assert total != sales
+    r = ok_receipt(sales_amount=sales, total_amount=total, sources=dict(QR_AMOUNTS))
+    assert validate(r, TODAY) == []
+    assert r.needs_review is False
+
+
+def test_sales_zero_still_skips_tax_check_when_sources_are_qr():
+    r = ok_receipt(sales_amount=0, sources=dict(QR_AMOUNTS))
+    assert validate(r, TODAY) == []
+    assert r.needs_review is False
+
+
+def test_small_equal_amount_without_qr_sources_stays_inside_tolerance():
+    # sales 10, expected tax 1, gap 0 is inside tolerance. Only both-qr exact equality warns.
+    r = ok_receipt(
+        sales_amount=10,
+        total_amount=10,
+        sources={"sales_amount": "llm", "total_amount": "llm"},
+    )
+    assert validate(r, TODAY) == []
+
+
+@pytest.mark.parametrize(
+    "sources",
+    [
+        {"sales_amount": "llm", "total_amount": "llm"},
+        {"sales_amount": "qr", "total_amount": "llm"},
+        {"sales_amount": "llm", "total_amount": "qr"},
+        {"sales_amount": "qr"},
+        {"total_amount": "qr"},
+        {},
+        {"sales_amount": "llm"},
+        {"total_amount": "llm"},
+    ],
+)
+def test_equal_amounts_without_both_qr_sources_stay_error(sources):
+    r = ok_receipt(sales_amount=100, total_amount=100, sources=sources)
+    issues = validate(r, TODAY)
+    assert [(i.code, i.severity) for i in issues] == [("tax_amount_mismatch", "error")]
+    r.issues.extend(issues)
+    assert r.needs_review is True
+
+
+@pytest.mark.parametrize(
+    "sales_src,total_src",
+    [
+        ("qr", "not-qr"),
+        ("QR", "qr"),
+        ("qr", "QR"),
+        ("qr", ""),
+        ("qr", None),
+        (None, "qr"),
+        ("qr", "qr\n"),
+        ("qr ", "qr"),
+        ("qr", "llm"),
+    ],
+)
+def test_inexact_provenance_does_not_downgrade(sales_src, total_src):
+    r = ok_receipt(sales_amount=59, total_amount=59, sources=dict(QR_AMOUNTS))
+    r.sources = {"sales_amount": sales_src, "total_amount": total_src}
+    issues = validate(r, TODAY)
+    assert [(i.code, i.severity) for i in issues] == [("tax_amount_mismatch", "error")]
+
+
+def test_extra_non_amount_sources_do_not_block_the_warning():
+    r = ok_receipt(
+        sales_amount=59,
+        total_amount=59,
+        sources={"sales_amount": "qr", "total_amount": "qr", "date": "llm", "invoice_number": "llm"},
+    )
+    issues = validate(r, TODAY)
+    assert [i.code for i in issues] == ["tax_amount_not_applicable"]
+    assert issues[0].severity == "warning"
+
+
+def test_malformed_amounts_are_rejected_before_the_tax_warning():
+    both_qr = dict(QR_AMOUNTS)
+
+    sales_bool = ok_receipt(sales_amount=1, total_amount=1, sources=both_qr)
+    sales_bool.sales_amount = True  # bool is an int subclass; the rule must still reject it
+    sales_bool_issues = validate(sales_bool, TODAY)
+    assert "sales_amount_invalid" in codes(sales_bool_issues)
+    assert "tax_amount_not_applicable" not in codes(sales_bool_issues)
+
+    sales_false = ok_receipt(sales_amount=0, sources=dict(QR_AMOUNTS))
+    sales_false.sales_amount = False  # must not take the sales == 0 skip
+    assert "sales_amount_invalid" in codes(validate(sales_false, TODAY))
+
+    sales_float = ok_receipt(sales_amount=100, total_amount=100, sources=dict(QR_AMOUNTS))
+    sales_float.sales_amount = 100.0
+    assert codes(validate(sales_float, TODAY)) == ["sales_amount_invalid"]
+
+    total_bool = ok_receipt(sales_amount=1, total_amount=1, sources=dict(QR_AMOUNTS))
+    total_bool.total_amount = True
+    total_bool_issues = validate(total_bool, TODAY)
+    assert "total_amount_out_of_range" in codes(total_bool_issues)
+    assert "tax_amount_not_applicable" not in codes(total_bool_issues)
+
+    total_float = ok_receipt(sales_amount=100, total_amount=100, sources=dict(QR_AMOUNTS))
+    total_float.total_amount = 100.0
+    assert codes(validate(total_float, TODAY)) == ["total_amount_out_of_range"]
+
+    too_high = ok_receipt(sales_amount=101, total_amount=100, sources=dict(QR_AMOUNTS))
+    assert codes(validate(too_high, TODAY)) == ["sales_amount_invalid"]
+
+    negative = ok_receipt(sales_amount=-5, sources=dict(QR_AMOUNTS))
+    assert codes(validate(negative, TODAY)) == ["sales_amount_invalid"]
+
+
+def test_warning_does_not_drop_other_errors():
+    r = ok_receipt(
+        sales_amount=100,
+        total_amount=100,
+        seller_tax_id="12345678",
+        sources=dict(QR_AMOUNTS),
+    )
+    issues = validate(r, TODAY)
+    assert [(i.code, i.severity) for i in issues] == [
+        ("tax_amount_not_applicable", "warning"),
+        ("seller_tax_id_checksum", "error"),
+    ]
+    assert r.sales_amount == 100 and r.total_amount == 100
+    r.issues.extend(issues)
+    assert r.needs_review is True
+    assert len(r.issues) == 2
+
+
+@pytest.mark.parametrize("sales,total", [(59, 59), (100, 100)])
+def test_synthetic_qr_equal_amounts_warn_and_need_review(sales, total):
+    qr = parse_einvoice_left(synthetic_left(sales, total))
+    assert qr is not None
+    assert (qr.sales_amount, qr.total_amount) == (sales, total)
+    r = reconcile(qr, LLMReceipt())
+    assert r.sources["sales_amount"] == "qr"
+    assert r.sources["total_amount"] == "qr"
+    r.issues.extend(validate(r, TODAY))
+    assert [(i.code, i.severity) for i in r.issues] == [("tax_amount_not_applicable", "warning")]
+    assert r.issues[0].message == TAX_NOT_APPLICABLE
+    assert r.needs_review is True
+    assert r.model_dump()["needs_review"] is True
+    assert r.sales_amount == sales and r.total_amount == total
+    assert "tax_type" not in r.model_dump()
+
+
+@pytest.mark.parametrize("sales,total", [(100, 101), (100, 102), (100, 103)])
+def test_synthetic_qr_outside_tolerance_stays_error(sales, total):
+    qr = parse_einvoice_left(synthetic_left(sales, total))
+    r = reconcile(qr, LLMReceipt())
+    r.issues.extend(validate(r, TODAY))
+    assert [(i.code, i.severity) for i in r.issues] == [("tax_amount_mismatch", "error")]
+    assert r.needs_review is True
+
+
+def test_synthetic_qr_inside_tolerance_has_no_tax_issue():
+    qr = parse_einvoice_left(synthetic_left(100, 104))
+    r = reconcile(qr, LLMReceipt())
+    assert validate(r, TODAY) == []
+    assert r.needs_review is False
