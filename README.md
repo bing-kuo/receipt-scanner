@@ -1,6 +1,6 @@
 # receipt-scanner
 
-台灣電子發票辨識 PoC(第一個切片):QR decode 先解固定欄位,LLM 只補 QR 沒有的欄位,最後用規則交叉驗證。圖片進、JSON 出。
+台灣電子發票辨識 PoC(第一個切片):QR decode 先解固定欄位,啟用 LLM 時獨立讀圖補欄位,最後用規則交叉驗證。圖片進、JSON 出。
 
 > **使用限制**:`receipt/validate.py` 只檢查格式、金額一致性、統編檢查碼與日期範圍,無法驗證 QR 加密欄位,偽造但內容一致的 QR 仍可能通過。`sales_amount` 與 `total_amount` 都大於零、差額恰為 0,且 `sources` 裡這兩個欄位都正好是 `qr` 時,結果是 warning `tax_amount_not_applicable`:這表示可能不適用營業稅,或 QR 被刻意做成 total 等於 sales,不是驗證,也不代表發票正確或真實。每一筆 issue(含 warning)都必須人工覆核,`needs_review` 維持 true,warning 不會被濾掉。差額不是 0 時仍用既有的 5% 與 tolerance 1;`sales_amount == 0` 仍略過稅額檢查,這個行為不變。來源缺漏、不是恰好 `qr`,或只有 LLM 時,不得降成這個 warning。輸出**不可直接用於金額核對或報帳**,實際報帳前一律需要人工審核。範例與測試資料全部是假資料。
 
@@ -44,7 +44,7 @@ python -m receipt extract path/to/receipt.jpg --use-llm
 
 ## 預算(上限 US$5)
 
-- 預設不呼叫 LLM。QR 能解的欄位不送 LLM,只在 `--use-llm` 時補其他欄位。
+- 預設不呼叫 LLM。啟用 `--use-llm` 時,會將整張圖片縮放後送到所設定的 LLM 端點,包含 QR 與所有可見內容;目前沒有裁切或遮蔽。請只用假資料,或先完成去識別處理。
 - 單次執行最多 `RECEIPT_MAX_LLM_CALLS` 次呼叫(含重試,預設 5,上限 10)。這只是防呆;**真正的上限要在 OpenAI 後台為專用 key 設定**。
 - 先用小模型,模型名稱由 `RECEIPT_MODEL` 指定,沒有預設值,避免默默用到貴的模型。
 - 送出前圖片會縮到長邊 1600px 並重新編碼(同時去掉 EXIF)。

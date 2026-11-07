@@ -26,7 +26,7 @@ from PIL import Image
 
 from receipt.models import QRFields
 
-_INVOICE_RE = re.compile(r"[A-Z]{2}\d{8}")
+_INVOICE_RE = re.compile(r"[A-Z]{2}[0-9]{8}")
 _DIGITS8_RE = re.compile(r"\d{8}")
 _NO_BUYER = "00000000"
 

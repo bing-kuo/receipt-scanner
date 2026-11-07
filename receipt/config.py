@@ -1,5 +1,6 @@
 """Settings are read from environment variables (loaded from .env in local development). The key is never printed or logged."""
 
+import math
 import os
 from dataclasses import dataclass, field
 
@@ -42,6 +43,8 @@ class Settings:
             max_calls = int(os.environ.get("RECEIPT_MAX_LLM_CALLS", "5"))
         except ValueError as e:
             raise ConfigError("RECEIPT_TIMEOUT_S or RECEIPT_MAX_LLM_CALLS is not a valid number") from e
+        if not math.isfinite(timeout_s) or timeout_s <= 0:
+            raise ConfigError("RECEIPT_TIMEOUT_S must be a finite positive number")
         return cls(
             openai_api_key=SecretStr(key),
             model=model,

@@ -27,7 +27,7 @@ class Item(BaseModel):
 
 
 class LLMReceipt(BaseModel):
-    """Schema for structured LLM output. Every field may be None: return None when unreadable, never guess."""
+    """Schema for structured LLM output. Unreadable scalar fields may be None; items is a list (empty when unavailable). Never guess."""
 
     invoice_number: str | None = None
     date: str | None = None  # ISO 8601
