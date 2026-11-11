@@ -165,9 +165,9 @@ jiter==0.18.0 \
     # via
     #   -r requirements.txt
     #   openai
-openai==3.42.0 \
-    --hash=sha256:deffe27f9e20e4f1d9d471978d12f23aa119382494c0a9860795e66943d0fe42 \
-    --hash=sha256:efb9d089ecf66c668289f647717389df98b40b954cd86d4fe54eddce39aabb3f
+openai==3.46.0 \
+    --hash=sha256:7b650117e9bf539029bf880c2eff94a26f281394f6572284efa5d068d4b1c98e \
+    --hash=sha256:fb34cd8cab6809ad0aa8dc42493fa622aaa87c814fd8e67a6fb3fa1f1e5d952d
     # via -r requirements.txt
 packaging==26.3 \
     --hash=sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79 \
